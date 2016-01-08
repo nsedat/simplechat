@@ -1,0 +1,16 @@
+/**
+ * minumum CSS without any eyecandy
+ */
+
+html {
+    padding: 10px;
+    font-family: Verdana, sans-serif;
+}
+
+small {
+	font-size: x-small;
+}
+
+.orange {
+    color: orange;;
+}

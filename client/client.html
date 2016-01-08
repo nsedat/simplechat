@@ -1,0 +1,38 @@
+<head>
+	<title>simple Chat App with Meteor</title>
+</head>
+<body>
+<h2>simplechat</h2>
+{{> welcome }}
+{{> username}}
+{{> recipient}}
+{{> message }}
+{{> chatlog }}
+</body>
+<template name="welcome">
+	<small><p>(please hit ENTER after each input)</p></small>
+</template>
+<template name="username">
+	<p>Username: <input type="text" id="username">
+	<small><br>- your username (eg. 'alice') ... no auth here for laziness</small></p>
+</template>
+<template name="recipient">
+	{{#if usernameIsSet}}
+		<p>Recipient: <input type="text" id="recipient" placeholder="g:ALL">
+		<small><br>- username to talk to (eg. 'bob')<br>- or groupname with prefix "g:" (eg. 'g:test')<br>- or leave empty for default group 'ALL' (aka 'g:ALL')<br>- you may soliloquize if you are the recipient ... to missuse chat as an private notepad :)</small></p>
+	{{/if}}
+</template>
+<template name="message">
+	{{#if usernameIsSet}}
+	<p>Message: <input type="text" id="message">
+	<small><br>- your message to send to user or group<br>- ENTER will send - so no linefeed is possible here yet</small></p>
+	{{/if}}
+</template>
+<template name="chatlog">
+	<h3>{{{communicationInfo}}}</h3>
+	<ul>
+	{{#each chatlogentry}}
+		<li><small>[{{ts}}]</small> <strong>{{from}}</strong> chats to <strong>{{to}}</strong> : <em>{{message}}</em><br></li>
+	{{/each}}
+	</ul>
+</template>
