@@ -10,7 +10,7 @@ if (Meteor.isClient) {
 	/**
 	 * setup/defines/defaults
 	 */
-	var defaultALLgroup = 'g:ALL';      // default group if none (empty receipient) given
+	var defaultAllGroup = 'g:all';      // default group if none (empty receipient) given
 	var enterKey = 13;                  // ENTER key event
 	var tabKey = 9;                     // TAB key event
 	var maxMessagesToShow = 20;         // maximum messages to be shown
@@ -153,7 +153,7 @@ if (Meteor.isClient) {
 					if (document.getElementById('recipient')) {
 						document.getElementById('recipient').value = '';
 					}
-					setRecipient(defaultALLgroup);
+					setRecipient(defaultAllGroup);
 				}
 			}
 		}
@@ -175,9 +175,9 @@ if (Meteor.isClient) {
 				// get recipient from input field
 				var recipient = document.getElementById('recipient').value.trim();
 
-				// default to group ALL (g:ALL) if empty
+				// default to group 'all' (g:all) if empty
 				if (!recipient) {
-					recipient = defaultALLgroup;
+					recipient = defaultAllGroup;
 				}
 
 				setRecipient(recipient);
@@ -210,7 +210,7 @@ if (Meteor.isClient) {
 						// create data to be stored
 						var data = {
 							from   : getUsername(),  // username who send message
-							to     : getRecipient(), // receipient (name or empty if ALL-group)
+							to     : getRecipient(), // receipient (name or empty if all-group)
 							message: message,        // given message
 							time   : Date.now(),     // microseconds ... sort criteria
 							ts     : timeStamp       // simple human readable timestamp
@@ -233,7 +233,7 @@ if (Meteor.isClient) {
 	 * @returns {V}
 	 */
 	var getUsername = function () {
-		return Session.get('username');
+		return Session.get('username').toLowerCase();
 	};
 
 	/**
@@ -241,7 +241,7 @@ if (Meteor.isClient) {
 	 * @returns {V}
 	 */
 	var setUsername = function (username) {
-		Session.set('username', username);
+		Session.set('username', username.toLowerCase());
 	};
 
 	/**
@@ -249,7 +249,7 @@ if (Meteor.isClient) {
 	 * @returns {V}
 	 */
 	var getRecipient = function () {
-		return Session.get('recipient');
+		return Session.get('recipient').toLowerCase();
 	};
 
 	/**
@@ -257,7 +257,7 @@ if (Meteor.isClient) {
 	 * @returns {V}
 	 */
 	var setRecipient = function (recipient) {
-		Session.set('recipient', recipient);
+		Session.set('recipient', recipient.toLowerCase());
 	};
 
 
@@ -265,5 +265,5 @@ if (Meteor.isClient) {
 	 * init
 	 */
 	setUsername('');
-	setRecipient(defaultALLgroup);
+	setRecipient(defaultAllGroup);
 }
