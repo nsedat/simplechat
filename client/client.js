@@ -8,6 +8,7 @@
 
 // This code only runs on the client
 if (Meteor.isClient) {
+
 	/**
 	 * setup/defines/defaults
 	 */
@@ -17,107 +18,58 @@ if (Meteor.isClient) {
 	var maxMessagesToShow = 20;         // maximum messages to be shown
 
 	/**
-	 * handle display of chat-log (or message for usage)
+	 * handle display of chat-log (or usage message)
 	 */
 	Template.chatlog.helpers({
 
-		// generate chat log data (depending on username and recipient aware to server)
+		/**
+		 * generate chat log data (depending on username and recipient aware to server)
+		 *
+		 * @returns {*}
+		 */
 		chatlogentry: function () {
-			var data;
+			var data = null;
 
-			// list generated/sorted by server
-			data = Chatlog.find();
+			if (Meteor.userId()) {
+
+				// list filtered by server
+				data = Chatlog.find(
+					{},
+					{
+						sort : {ts: -1}
+					}
+				);
+			}
 
 			return data;
 		},
 
-		// generate info about chat status (username needed, 1:1-chat or group-chat)
+		/**
+		 * generate info about chat status (username needed, 1:1-chat or group-chat)
+		 *
+		 * @returns {string}
+		 */
 		communicationInfo: function () {
 			var messageString = '';
-			var username = getUsername();
+			var username;
 			var recipient = getRecipient();
 
-			if (username) {
+			if (Meteor.userId()) {
 				var rex = /^g:(.+)$/g;  // starts with "g:"
+
+				username = Meteor.userId().username;
 				if (rex.exec(recipient)) {   // to a group
 					messageString = `messages in group '${RegExp.$1}' :`;
 				} else {
 					messageString = `private messages between me (${username}) and user '${recipient}' :`;
 				}
 			} else {
-				messageString = '<span class="orange">please type in your username ...</span>';
+				messageString = '<span class="orange">please log in ...</span>';
 			}
 
 			return messageString;
 		}
 	});
-
-	/**
-	 * check if username is set
-	 * @returns {boolean}
-	 */
-	usernameIsSet = function() {
-
-		var isSet = false;
-
-		if (getUsername()) {
-			isSet = true;
-		}
-
-		return isSet;
-	};
-
-	/**
-	 * template 'recipient' helper
-	 */
-	Template.recipient.helpers({
-
-		// check if username is set (to display input or not)
-		usernameIsSet: function () {
-			return usernameIsSet();
-		}
-	});
-
-	/**
-	 * template 'message' helper
-	 */
-	Template.message.helpers({
-
-		// check if username is set (to display input or not)
-		usernameIsSet: function () {
-			return usernameIsSet();
-		}
-	});
-
-	/**
-	 * set "user"-name (needed to do actions)
-	 *
-	 * @type {{keydown input#recipient: Template.recipient.events.'keydown input#recipient'}}
-	 */
-	Template.username.events = {
-
-		// fetch username on ENTER
-		'keydown, focusout input#username': function (event) {
-
-			// leaves input field with TAB or ENTER or focusout
-			if ((event.which == enterKey) || (event.which == tabKey) || (event.type=='focusout')) {
-
-				// get username from input field
-				var username = document.getElementById('username').value.trim();
-
-				// username changed ?
-				if (username != getUsername()) {
-					setUsername(username);
-
-					// reset "recipient"
-					if (document.getElementById('recipient')) {
-						document.getElementById('recipient').value = '';
-					}
-					setRecipient(defaultAllGroup);
-				}
-			}
-		}
-	};
 
 	/**
 	 * set/unset "to"-name (user which you want to talk to or empty if open group "ALL")
@@ -127,20 +79,22 @@ if (Meteor.isClient) {
 	Template.recipient.events = {
 
 		// fetch recipient on ENTER
-		'keydown, focusout input#recipient': function (event) {
+		'keydown, focusout input#recipient' : function (event) {
+			if (Meteor.userId()) {
 
-			// leaves input field with TAB or ENTER or focusout
-			if ((event.which == enterKey) || (event.which == tabKey) || (event.type=='focusout')) {
+				// leaves input field with TAB or ENTER or focusout
+				if ((event.which == enterKey) || (event.which == tabKey) || (event.type == 'focusout')) {
 
-				// get recipient from input field
-				var recipient = document.getElementById('recipient').value.trim();
+					// get recipient from input field
+					var recipient = document.getElementById('recipient').value.trim();
 
-				// default to group 'all' (g:all) if empty
-				if (!recipient) {
-					recipient = defaultAllGroup;
+					// default to group 'all' (g:all) if empty
+					if (!recipient) {
+						recipient = defaultAllGroup;
+					}
+
+					setRecipient(recipient);
 				}
-
-				setRecipient(recipient);
 			}
 		}
 	};
@@ -152,8 +106,8 @@ if (Meteor.isClient) {
 	Template.message.events = {
 
 		// fetch ENTER keystroke and insert message into database
-		'keydown input#message': function (event) {
-			if (getUsername()) {  // only if username is set
+		'keydown input#message' : function (event) {
+			if (Meteor.userId()) {
 
 				// only if hit ENTER
 				if (event.which == enterKey) {
@@ -163,21 +117,8 @@ if (Meteor.isClient) {
 
 					if (message != '') {
 
-						// create timestamp
-						var date = new Date();
-						var timeStamp = date.toLocaleDateString() + " " + date.toLocaleTimeString();
-
-						// create data to be stored
-						var data = {
-							from   : getUsername(),  // username who send message
-							to     : getRecipient(), // receipient (name or empty if all-group)
-							message: message,        // given message
-							time   : Date.now(),     // microseconds ... sort criteria
-							ts     : timeStamp       // simple human readable timestamp
-						};
-
-						// insert data to database
-						Chatlog.insert(data);
+						var recipientName = getRecipient();
+						Meteor.call('storeMessage', message, recipientName);
 
 						// clear input field
 						document.getElementById('message').value = '';
@@ -187,29 +128,12 @@ if (Meteor.isClient) {
 		}
 	};
 
-
-	/**
-	 * get actual username
-	 * @returns {V}
-	 */
-	var getUsername = function () {
-		return Session.get('username').toLowerCase();
-	};
-
-	/**
-	 * set current username
-	 * @returns {V}
-	 */
-	var setUsername = function (username) {
-		Session.set('username', username.toLowerCase());
-	};
-
 	/**
 	 * get actual recipient
 	 * @returns {V}
 	 */
 	var getRecipient = function () {
-		return Session.get('recipient').toLowerCase();
+		return Session.get('recipient');
 	};
 
 	/**
@@ -217,22 +141,29 @@ if (Meteor.isClient) {
 	 * @returns {V}
 	 */
 	var setRecipient = function (recipient) {
-		Session.set('recipient', recipient.toLowerCase());
+		Session.set('recipient', recipient);
 	};
 
 
 	/**
 	 * init
 	 */
-	setUsername('');
 	setRecipient(defaultAllGroup);
 
 	/**
 	 * subscribe on autorun (when session vars change)
 	 */
 	Meteor.autorun(function() {
-		Meteor.subscribe('chatlog', getUsername(), getRecipient(), maxMessagesToShow, function() {
+		Meteor.subscribe('chatlog', getRecipient(), maxMessagesToShow, function() {
+			// no handler here yet
 		});
+	});
+
+	/**
+	 * config userauth/login
+	 */
+	Accounts.ui.config({
+		passwordSignupFields: "USERNAME_ONLY"
 	});
 
 }

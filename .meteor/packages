@@ -5,7 +5,8 @@
 
 insecure
 accounts-ui
-accounts-github
 standard-app-packages
 standard-minifiers
 ecmascript
+accounts-password
+momentjs:moment

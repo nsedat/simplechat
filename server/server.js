@@ -1,30 +1,77 @@
 /**
- * Created by niels on 10.01.2016.
+ * Meteor based simple chat app
+ * server implementations
+ *
+ * @date: 2016-01-10
+ * @author: Niels Sedat
  */
 
 // This code only runs on the server
 if (Meteor.isServer) {
 
-	// Only fetch data belongs to user
-	Meteor.publish("chatlog", function (username,  recipient,  limit) {
+	/**
+	 * get username by current userid
+	 *
+	 * @returns {recipientData.username|{$eq}}
+	 */
+	var getUsernameByCurrentId = function(uid) {
+		var user = null;
+		var username = undefined;
+
+		if (uid) {
+			user = Meteor.users.findOne(uid);
+			username = user.username;
+		}
+
+		return username;
+	}
+
+	/**
+	 * get recipients ID by given name
+	 *
+	 * @param recipientName
+	 * @returns {*}
+	 */
+	var getRecipientIdByName = function(recipientName) {
+		var recipientData = null;
+		var recipientId = null;
+
+		if (recipientName) {
+			recipientData = Meteor.users.findOne({username: {$eq: recipientName}});
+			if (recipientData) {
+				recipientId = recipientData._id;
+			}
+		}
+
+		return recipientId;
+	}
+
+	/**
+	 * Only fetch data belongs to user and recipient
+	 */
+	Meteor.publish("chatlog", function (recipientName, limit) {
 		var data;
 		var query;
+		var uid = this.userId;
 
 		// check if username is set
-		if (!username || !username.length) {
+		if (!uid) {
 			return null;
 		}
 
+		var recipientId = getRecipientIdByName(recipientName);
+		var username = getUsernameByCurrentId(uid);
+
 		// build query
-		if (recipient.match(/^g:.+$/g)) {   // to a group
+		if (recipientName.match(/^g:.+$/g)) {   // to a group
 			query = {
-				to: {$not: {$ne: recipient}}
+				to: {$eq: recipientName}    // no id yet
 			};
 		} else {    // with one person
 			query = {
-				$or: [  // ANNOT: miniMongo actually has problems with simple "$eq" ... !!! (therefor using dumb $not$ne construct
-					{$and: [{from: {$not: {$ne: username}}}, {to: {$not: {$ne: recipient}}}]},   // user->to
-					{$and: [{from: {$not: {$ne: recipient}}}, {to: {$not: {$ne: username}}}]}    // to->user
+				$or: [  // in future there might be only id relations in this query ...
+					{$and: [{uid: {$eq: uid}}, {to: {$eq: recipientName}}]},   // user->recipient
+					{$and: [{uid: {$eq: recipientId}}, {to: {$eq: username}}]}    // recipient->user
 				]
 			};
 		}
@@ -36,14 +83,16 @@ if (Meteor.isServer) {
 			limit = 1000;
 		}
 
-		// call query (and sort)
+		// call query (and limit)
 		data = Chatlog.find(
 			query,
 			{
-				sort : {time: -1},   // sort decending (newest on top)
+				sort : {ts: -1},
 				limit: limit
 			}
 		);
+
+//		var count = Chatlog.find(query).count();    // not used yet
 
 		if (!data) {
 			data = this.ready();
@@ -51,4 +100,55 @@ if (Meteor.isServer) {
 
 		return data;
 	});
+
+	// TODO: not used yet !!
+	/**
+	 * find list of all known users
+	 */
+	Meteor.publish("userlist", function () {
+		var data;
+		var query;
+
+		query = {};
+
+		data = Meteor.users.find(
+			query
+		);
+
+		return data;
+	});
+
+	// server methods to be called by client
+	Meteor.methods({
+
+		/**
+		 * store message data to database
+		 *
+		 * @param message
+		 * @param recipientName
+		 */
+		"storeMessage": function (message, recipientName) {
+			var ts = Date.now();    // ms from 1970
+			var timeStamp = moment(ts).format('YYYY-MM-DD HH:mm:ss');   // human readable
+			var username = getUsernameByCurrentId(this.userId);
+			var recipientId = getRecipientIdByName(recipientName);
+
+			// create data to be stored
+			var data = {
+				uid     : this.userId,   // userid from login
+				from    : username,      // TODO: should not be in data ... fetch from outside (merge when fetch data)
+				toid    : recipientId,   // recipient (name or empty if all-group)
+				to      : recipientName, // TODO: should not be in data ... fetch from outside (merge when fetch data)
+				message : message,       // given message
+				ts      : ts,            // microseconds ... sort criteria
+				time    : timeStamp      // simple human readable timestamp
+			};
+
+			// insert data to database
+			Chatlog.insert(data);
+
+		}
+
+	});
+
 }
