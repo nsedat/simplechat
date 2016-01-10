@@ -2,70 +2,31 @@
  * Meteor based simple chat app
  * client implementations
  *
- * @date: 2016-01-07
+ * @date: 2016-01-10
  * @author: Niels Sedat
  */
 
+// This code only runs on the client
 if (Meteor.isClient) {
 	/**
 	 * setup/defines/defaults
 	 */
-	var defaultAllGroup = 'g:all';      // default group if none (empty receipient) given
 	var enterKey = 13;                  // ENTER key event
 	var tabKey = 9;                     // TAB key event
+	var defaultAllGroup = 'g:all';      // default group if none (empty receipient) given
 	var maxMessagesToShow = 20;         // maximum messages to be shown
-
-	/**
-	 * bind events
-	 */
-	Meteor.subscribe('chatlog');
 
 	/**
 	 * handle display of chat-log (or message for usage)
 	 */
 	Template.chatlog.helpers({
 
-		// generate chat log data (depending on username and recipient)
+		// generate chat log data (depending on username and recipient aware to server)
 		chatlogentry: function () {
-			var data = null;
-			var query = {};
-			var username = getUsername();
-			var recipient = getRecipient();
-			var limit = maxMessagesToShow;
+			var data;
 
-			// check if username is set
-			if (!username) {
-				return null;
-			}
-
-			// build query
-			if (recipient.match(/^g:.+$/g)) {   // to a group
-				query = {
-					to: {$not: {$ne: recipient}}
-				};
-			} else {
-				query = {
-					$or: [  // ANNOT: miniMongo has actual problem with simple "$eq" ... !!! (therefor using dumb $not$ne construct
-						{$and: [{from: {$not: {$ne: username}}}, {to: {$not: {$ne: recipient}}}]},   // user->to
-						{$and: [{from: {$not: {$ne: recipient}}}, {to: {$not: {$ne: username}}}]}    // to->user
-					]
-				};
-			}
-
-			// admin hack to show all data
-			if (username == 'admin') {
-				query = {};
-				limit = 1000;
-			}
-
-			// call query (and sort)
-			data = Chatlog.find(
-				query,
-				{
-					sort : {time: -1},   // sort decending (newest on top)
-					limit: limit
-				}
-			);
+			// list generated/sorted by server
+			data = Chatlog.find();
 
 			return data;
 		},
@@ -146,7 +107,6 @@ if (Meteor.isClient) {
 
 				// username changed ?
 				if (username != getUsername()) {
-
 					setUsername(username);
 
 					// reset "recipient"
@@ -266,4 +226,13 @@ if (Meteor.isClient) {
 	 */
 	setUsername('');
 	setRecipient(defaultAllGroup);
+
+	/**
+	 * subscribe on autorun (when session vars change)
+	 */
+	Meteor.autorun(function() {
+		Meteor.subscribe('chatlog', getUsername(), getRecipient(), maxMessagesToShow, function() {
+		});
+	});
+
 }
