@@ -64,7 +64,7 @@ if (Meteor.isClient) {
 					messageString = `private messages between me (${username}) and user '${recipient}' :`;
 				}
 			} else {
-				messageString = '<span class="orange">please log in ...</span>';
+				messageString = '<span class="orange">...</span>';
 			}
 
 			return messageString;

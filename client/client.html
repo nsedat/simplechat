@@ -1,43 +1,87 @@
 <head>
-	<title>simple Chat App with Meteor</title>
+    <title>simple Chat App with Meteor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
-<header>
-<h2>simplechat</h2>
-{{> welcome }}
-{{> loginButtons}}
-</header>
-<!--{{> username}}-->
-{{> recipient}}
-{{> message }}
-{{> chatlog }}
+<div class="container.fluid">
+    <div class="row">
+        <div class="col.xs-12">
+            <header>
+                <h2>simplechat
+                {{> welcome }}
+                {{> loginButtons}}
+                </h2>
+            </header>
+        </div>
+    </div>
+    <!--{{> username}}-->
+    {{> recipient}}
+    {{> message }}
+    {{> chatlog }}
+</div>
 </body>
 
 <template name="welcome">
-    <small>very simple chat app with meteor</small>
+    {{#if currentUser}}
+        <small>you're logged in as </small>
+    {{else}}
+        <small>before use, please</small>
+    {{/if}}
 </template>
 
 <template name="recipient">
     {{#if currentUser}}
-		<p>Recipient: <input type="text" id="recipient" placeholder="g:all">
-		<small><br>- username to talk to (eg. 'bob')<br>- or public groupname with prefix "g:" (eg. 'g:test')<br>- or leave empty for default group 'all' (aka 'g:all')<br>- you may soliloquize if you are the recipient ... to missuse chat as an private notepad :)</small></p>
-	{{/if}}
+    <div class="row">
+        <div class="col-xs-12">
+            <div class="form-group col-xs-3">
+                Recipient:
+                <input class="form-control" type="text" id="recipient" placeholder="g:all">
+            </div>
+            <small>- username to talk to (eg. 'bob')<br>- or public groupname with prefix "g:" (eg. 'g:test')<br>-
+                or leave empty for default group 'all' (aka 'g:all')<br>- you may soliloquize if you are the recipient
+                ... to missuse chat as an private notepad :)
+            </small>
+        </div>
+    </div>
+    {{/if}}
 </template>
 
 <template name="message">
     {{#if currentUser}}
-        <p>Message: <input type="text" id="message">
-        <small><br>- your message to send to user or group<br>- ENTER will send - so no linefeed is possible here yet</small></p>
-	{{/if}}
+    <div class="row">
+        <div class="col-xs-12">
+            <div class="form-group col-xs-6">
+                Message:
+                <input class="form-control" type="text" id="message">
+            </div>
+            <small>- your message to send to user or group<br>- ENTER will send - so no linefeed is possible here
+                yet
+            </small>
+        </div>
+    </div>
+    {{/if}}
 </template>
 
 <template name="chatlog">
-    <h3>{{{communicationInfo}}}</h3>
-    {{#if currentUser}}
-	<ul>
-	    {{#each chatlogentry}}
-		<li><small>[{{time}}]</small> <strong>{{from}}</strong> chats to <strong>{{to}}</strong> : <em>{{message}}</em><br></li>
-	    {{/each}}
-	</ul>
-    {{/if}}
+    <div class="row">
+        <div class="col-xs-12">
+            <h3>{{{communicationInfo}}}</h3>
+            {{#if currentUser}}
+            <ul class="list-group">
+                {{#each chatlogentry}}
+                <li class="list-group-item">
+                    <span class="list-group-item-heading">
+                        <small>[{{time}}]</small>
+                        <span class="label label-primary">{{from}}</span>
+                        chats to
+                        <span class="label label-info">{{to}}</span>
+                        :
+                    </span>
+                    <span class="list-group-item-text">{{message}}</span>
+                </li>
+                {{/each}}
+            </ul>
+            {{/if}}
+        </div>
+    </div>
 </template>

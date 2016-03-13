@@ -7,10 +7,15 @@ html {
     font-family: Verdana, sans-serif;
 }
 
+body {
+    background-color: antiquewhite;
+    margin: 1em;
+}
+
 small {
 	font-size: x-small;
 }
 
 .orange {
-    color: orange;;
+    color: blue;
 }

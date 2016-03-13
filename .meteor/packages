@@ -10,3 +10,4 @@ standard-minifiers
 ecmascript
 accounts-password
 momentjs:moment
+twbs:bootstrap
